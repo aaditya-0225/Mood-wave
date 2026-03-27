@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+dist/
+.env
+*.log
+Mood-based\ Visual\ Control\ App/node_modules/
+Mood-based\ Visual\ Control\ App/dist/
