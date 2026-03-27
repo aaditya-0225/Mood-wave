@@ -113,145 +113,378 @@
 
   // ── Renderers ─────────────────────────────────
 
-  // MODE 1: FLOW (Existing Particles)
-  const particles = Array.from({length: 2000}, () => ({
-    x: Math.random() * W, y: Math.random() * H,
-    px: 0, py: 0, speed: 0.5 + Math.random() * 1.5,
-    life: Math.random(),
+  // MODE 1: CALM / FLOW — Dense layered particle flow with glowing depth
+  const particles = Array.from({length: 3000}, () => ({
+    x: Math.random() * 2000, y: Math.random() * 2000,
+    px: 0, py: 0, speed: 0.3 + Math.random() * 2,
+    life: Math.random(), layer: Math.floor(Math.random() * 3),
+    hueOff: Math.random() * 40 - 20,
     reset() { this.x = Math.random() * W; this.y = Math.random() * H; this.px = this.x; this.py = this.y; this.life = 1; }
   }));
 
   function renderFlow(ctx, dt, pal) {
-    ctx.fillStyle = 'rgba(5, 5, 10, 0.1)';
+    ctx.fillStyle = 'rgba(2, 2, 8, 0.08)';
     ctx.fillRect(0, 0, W, H);
+
+    const t = performance.now() * 0.0001;
     ctx.lineCap = 'round';
+
+    // Background glow
+    const glowX = W/2 + Math.sin(t * 8) * W * 0.2;
+    const glowY = H/2 + Math.cos(t * 6) * H * 0.2;
+    const bgGlow = ctx.createRadialGradient(glowX, glowY, 0, glowX, glowY, W * 0.4);
+    bgGlow.addColorStop(0, `hsla(${pal.hue + 30}, 80%, 40%, 0.03)`);
+    bgGlow.addColorStop(1, 'transparent');
+    ctx.fillStyle = bgGlow;
+    ctx.fillRect(0, 0, W, H);
+
     particles.forEach(p => {
-      const s = 0.002;
-      const angle = noise2D(p.x * s, p.y * s + performance.now() * 0.0001) * Math.PI * 4;
+      const scale = [0.001, 0.002, 0.004][p.layer];
+      const speedMult = [0.6, 1, 1.6][p.layer];
+      const angle = noise2D(p.x * scale, p.y * scale + t * 2) * Math.PI * 4;
       p.px = p.x; p.py = p.y;
-      p.x += Math.cos(angle) * p.speed * (1 + bio.hrNorm * 2);
-      p.y += Math.sin(angle) * p.speed * (1 + bio.hrNorm * 2);
-      p.life -= 0.005;
-      if (p.life <= 0 || p.x < 0 || p.x > W || p.y < 0 || p.y > H) p.reset();
-      ctx.strokeStyle = `hsla(${pal.hue + Math.random()*20}, 80%, 60%, ${p.life * 0.5})`;
-      ctx.lineWidth = 1 + bio.strNorm * 2;
+      const vel = p.speed * speedMult * (1 + bio.hrNorm * 2.5);
+      p.x += Math.cos(angle) * vel;
+      p.y += Math.sin(angle) * vel;
+      p.life -= 0.003;
+      if (p.life <= 0 || p.x < -20 || p.x > W + 20 || p.y < -20 || p.y > H + 20) p.reset();
+
+      const alpha = p.life * [0.3, 0.5, 0.7][p.layer];
+      const lightness = 50 + p.layer * 10;
+      ctx.strokeStyle = `hsla(${pal.hue + p.hueOff}, 85%, ${lightness}%, ${alpha})`;
+      ctx.lineWidth = [0.5, 1.2, 2.5][p.layer] + bio.strNorm * 1.5;
       ctx.beginPath(); ctx.moveTo(p.px, p.py); ctx.lineTo(p.x, p.y); ctx.stroke();
     });
   }
 
-  // MODE 2: PULSE (Expanding Geometry)
-  const rings = [];
+  // MODE 2: FOCUSED / PULSE — Sacred geometry with rotating polygons
+  const pulseRings = [];
   function renderPulse(ctx, dt, pal) {
-    ctx.fillStyle = 'rgba(5, 5, 12, 0.15)';
-    ctx.fillRect(0, 0, W, H);
-    if (bio.beatPhase > 0.9) rings.push({ r: 0, a: 1 });
-    ctx.lineWidth = 2 + bio.strNorm * 5;
-    rings.forEach((r, i) => {
-      r.r += (5 + bio.hrNorm * 10);
-      r.a -= 0.01;
-      if (r.a <= 0) rings.splice(i, 1);
-      ctx.strokeStyle = `hsla(${pal.hue}, 80%, 60%, ${r.a})`;
-      ctx.beginPath();
-      ctx.arc(W/2, H/2, r.r, 0, Math.PI * 2);
-      ctx.stroke();
-      // Inner spikes
-      if (bio.strNorm > 0.4) {
-        ctx.beginPath();
-        for(let j=0; j<8; j++) {
-          const ang = (j/8) * Math.PI * 2 + performance.now()*0.001;
-          ctx.moveTo(W/2 + Math.cos(ang)*r.r*0.8, H/2 + Math.sin(ang)*r.r*0.8);
-          ctx.lineTo(W/2 + Math.cos(ang)*r.r*1.2, H/2 + Math.sin(ang)*r.r*1.2);
-        }
-        ctx.stroke();
-      }
-    });
-  }
-
-  // MODE 3: FLUID (Ink/Smoke)
-  function renderFluid(ctx, dt, pal) {
-    ctx.fillStyle = 'rgba(5, 5, 15, 0.05)';
+    ctx.fillStyle = 'rgba(3, 3, 12, 0.12)';
     ctx.fillRect(0, 0, W, H);
     const t = performance.now() * 0.001;
-    for (let i = 0; i < 5; i++) {
-      const cx = W/2 + Math.sin(t + i) * W * 0.3;
-      const cy = H/2 + Math.cos(t * 0.8 + i) * H * 0.3;
-      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 100 + bio.strNorm * 200);
-      grad.addColorStop(0, `hsla(${pal.hue + i*20}, 90%, 60%, 0.2)`);
-      grad.addColorStop(1, 'transparent');
-      ctx.fillStyle = grad;
-      ctx.beginPath(); ctx.arc(cx, cy, 100 + bio.strNorm * 200, 0, Math.PI*2); ctx.fill();
+
+    // Central glow
+    const coreGlow = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, 200 + bio.beatPhase * 80);
+    coreGlow.addColorStop(0, `hsla(${pal.hue}, 100%, 70%, ${0.15 + bio.beatPhase * 0.2})`);
+    coreGlow.addColorStop(0.5, `hsla(${pal.hue + 20}, 80%, 50%, 0.05)`);
+    coreGlow.addColorStop(1, 'transparent');
+    ctx.fillStyle = coreGlow;
+    ctx.fillRect(0, 0, W, H);
+
+    if (bio.beatPhase > 0.9) {
+      pulseRings.push({ r: 10, a: 1, sides: [3, 4, 5, 6, 8][Math.floor(Math.random() * 5)], rot: Math.random() * Math.PI });
     }
-    // High-speed wisps
-    ctx.strokeStyle = pal.main;
-    ctx.lineWidth = 0.5;
-    for(let i=0; i<20; i++) {
-        const x = Math.random()*W;
-        const y = Math.random()*H;
-        ctx.beginPath(); ctx.moveTo(x,y); 
-        ctx.lineTo(x + noise2D(x*0.01, t)*50, y + noise2D(y*0.01, t)*50);
-        ctx.stroke();
+    
+    pulseRings.forEach((ring, i) => {
+      ring.r += (4 + bio.hrNorm * 12);
+      ring.a -= 0.008;
+      ring.rot += 0.005;
+      if (ring.a <= 0) { pulseRings.splice(i, 1); return; }
+
+      // Draw polygon ring
+      ctx.strokeStyle = `hsla(${pal.hue + ring.r * 0.3}, 80%, 60%, ${ring.a * 0.8})`;
+      ctx.lineWidth = 1.5 + bio.strNorm * 3;
+      ctx.beginPath();
+      for (let j = 0; j <= ring.sides; j++) {
+        const ang = (j / ring.sides) * Math.PI * 2 + ring.rot + t * 0.2;
+        const px = W/2 + Math.cos(ang) * ring.r;
+        const py = H/2 + Math.sin(ang) * ring.r;
+        j === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.stroke();
+
+      // Inner connecting lines (sacred geometry)
+      if (ring.r < 300 && ring.sides >= 5) {
+        ctx.strokeStyle = `hsla(${pal.hue + 60}, 70%, 50%, ${ring.a * 0.2})`;
+        ctx.lineWidth = 0.5;
+        for (let j = 0; j < ring.sides; j++) {
+          const ang1 = (j / ring.sides) * Math.PI * 2 + ring.rot + t * 0.2;
+          const ang2 = ((j + 2) / ring.sides) * Math.PI * 2 + ring.rot + t * 0.2;
+          ctx.beginPath();
+          ctx.moveTo(W/2 + Math.cos(ang1) * ring.r, H/2 + Math.sin(ang1) * ring.r);
+          ctx.lineTo(W/2 + Math.cos(ang2) * ring.r, H/2 + Math.sin(ang2) * ring.r);
+          ctx.stroke();
+        }
+      }
+    });
+
+    // Orbiting dots
+    for (let i = 0; i < 12; i++) {
+      const orbitR = 60 + i * 30;
+      const ang = t * (0.5 - i * 0.03) + i;
+      const dx = W/2 + Math.cos(ang) * orbitR;
+      const dy = H/2 + Math.sin(ang) * orbitR;
+      const dotGlow = ctx.createRadialGradient(dx, dy, 0, dx, dy, 8 + bio.beatPhase * 6);
+      dotGlow.addColorStop(0, `hsla(${pal.hue + i * 15}, 90%, 70%, 0.8)`);
+      dotGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = dotGlow;
+      ctx.beginPath(); ctx.arc(dx, dy, 8 + bio.beatPhase * 6, 0, Math.PI * 2); ctx.fill();
     }
   }
 
-  // MODE 4: GRID (3D Synthwave)
-  function renderGrid(ctx, dt, pal) {
-    ctx.fillStyle = '#050510';
+  // MODE 3: HAPPY / FLUID — Lava lamp metaballs with organic tendrils
+  const blobs = Array.from({length: 10}, (_, i) => ({
+    x: Math.random(), y: Math.random(),
+    vx: (Math.random() - 0.5) * 0.002,
+    vy: (Math.random() - 0.5) * 0.002,
+    r: 80 + Math.random() * 120,
+    hueOff: i * 25, phase: i * 0.7
+  }));
+
+  function renderFluid(ctx, dt, pal) {
+    ctx.fillStyle = 'rgba(3, 3, 12, 0.04)';
     ctx.fillRect(0, 0, W, H);
-    const time = performance.now() * 0.001;
+    const t = performance.now() * 0.001;
+
+    // Animate blobs
+    blobs.forEach(b => {
+      b.x += b.vx + Math.sin(t * 0.3 + b.phase) * 0.001;
+      b.y += b.vy + Math.cos(t * 0.25 + b.phase) * 0.001;
+      if (b.x < 0.05 || b.x > 0.95) b.vx *= -1;
+      if (b.y < 0.05 || b.y > 0.95) b.vy *= -1;
+      b.x = Math.max(0.02, Math.min(0.98, b.x));
+      b.y = Math.max(0.02, Math.min(0.98, b.y));
+    });
+
+    // Draw blobs with layered radial gradients
+    blobs.forEach((b, i) => {
+      const cx = b.x * W;
+      const cy = b.y * H;
+      const radius = b.r * (1 + bio.strNorm * 0.8 + Math.sin(t + b.phase) * 0.2);
+
+      // Outer glow
+      const g1 = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * 1.5);
+      g1.addColorStop(0, `hsla(${pal.hue + b.hueOff}, 90%, 60%, 0.12)`);
+      g1.addColorStop(0.5, `hsla(${pal.hue + b.hueOff + 20}, 80%, 50%, 0.06)`);
+      g1.addColorStop(1, 'transparent');
+      ctx.fillStyle = g1;
+      ctx.beginPath(); ctx.arc(cx, cy, radius * 1.5, 0, Math.PI * 2); ctx.fill();
+
+      // Inner core
+      const g2 = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * 0.6);
+      g2.addColorStop(0, `hsla(${pal.hue + b.hueOff}, 100%, 75%, 0.25)`);
+      g2.addColorStop(1, `hsla(${pal.hue + b.hueOff}, 90%, 55%, 0.05)`);
+      ctx.fillStyle = g2;
+      ctx.beginPath(); ctx.arc(cx, cy, radius * 0.6, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // Organic tendrils connecting nearby blobs
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < blobs.length; i++) {
+      for (let j = i + 1; j < blobs.length; j++) {
+        const dx = (blobs[i].x - blobs[j].x) * W;
+        const dy = (blobs[i].y - blobs[j].y) * H;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 300) {
+          const alpha = (1 - dist / 300) * 0.15;
+          ctx.strokeStyle = `hsla(${pal.hue + blobs[i].hueOff}, 80%, 60%, ${alpha})`;
+          const cpx = (blobs[i].x + blobs[j].x) / 2 * W + noise2D(i + j, t * 0.2) * 60;
+          const cpy = (blobs[i].y + blobs[j].y) / 2 * H + noise2D(j, t * 0.2) * 60;
+          ctx.beginPath();
+          ctx.moveTo(blobs[i].x * W, blobs[i].y * H);
+          ctx.quadraticCurveTo(cpx, cpy, blobs[j].x * W, blobs[j].y * H);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Floating sparkles
+    for (let i = 0; i < 30; i++) {
+      const sx = (noise2D(i * 0.5, t * 0.3) * 0.5 + 0.5) * W;
+      const sy = (noise2D(i * 0.5 + 100, t * 0.3) * 0.5 + 0.5) * H;
+      const sa = Math.sin(t * 2 + i) * 0.3 + 0.4;
+      ctx.fillStyle = `hsla(${pal.hue + i * 8}, 90%, 80%, ${sa * 0.4})`;
+      ctx.beginPath(); ctx.arc(sx, sy, 2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // MODE 4: ENERGETIC / GRID — Full synthwave with mountains, sun & scan lines
+  function renderGrid(ctx, dt, pal) {
+    const t = performance.now() * 0.001;
     const speed = 1 + bio.hrNorm * 4;
-    ctx.strokeStyle = `hsla(${pal.hue}, 80%, 40%, 0.3)`;
+    const horizon = H * 0.45;
+
+    // Sky gradient
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, horizon);
+    skyGrad.addColorStop(0, '#020008');
+    skyGrad.addColorStop(0.5, `hsla(${pal.hue - 40}, 80%, 8%, 1)`);
+    skyGrad.addColorStop(1, `hsla(${pal.hue - 20}, 90%, 15%, 1)`);
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, horizon);
+
+    // Ground
+    const gndGrad = ctx.createLinearGradient(0, horizon, 0, H);
+    gndGrad.addColorStop(0, `hsla(${pal.hue}, 80%, 10%, 1)`);
+    gndGrad.addColorStop(1, '#020008');
+    ctx.fillStyle = gndGrad;
+    ctx.fillRect(0, horizon, W, H - horizon);
+
+    // Sun with horizontal slices
+    const sunY = horizon - 60;
+    const sunR = 80 + bio.beatPhase * 15;
+    for (let s = 0; s < sunR; s += 4) {
+      const sliceAlpha = (s % 12 < 6) ? 0.9 : 0.3;
+      const grad = ctx.createRadialGradient(W/2, sunY, s, W/2, sunY, s + 4);
+      grad.addColorStop(0, `hsla(${pal.hue - 30}, 100%, 60%, ${sliceAlpha * (1 - s / sunR)})`);
+      grad.addColorStop(1, `hsla(${pal.hue}, 100%, 50%, ${sliceAlpha * 0.5 * (1 - s / sunR)})`);
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(W/2, sunY, s + 4, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Sun reflection glow
+    const reflGrad = ctx.createRadialGradient(W/2, sunY, 0, W/2, sunY, sunR * 3);
+    reflGrad.addColorStop(0, `hsla(${pal.hue - 20}, 100%, 60%, 0.15)`);
+    reflGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = reflGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Mountain silhouette
+    ctx.fillStyle = `hsla(${pal.hue}, 60%, 5%, 0.9)`;
+    ctx.beginPath();
+    ctx.moveTo(0, horizon);
+    for (let x = 0; x <= W; x += 8) {
+      const mh = noise2D(x * 0.003, 1) * 80 + noise2D(x * 0.008, 2) * 30;
+      ctx.lineTo(x, horizon - Math.abs(mh) - 20);
+    }
+    ctx.lineTo(W, horizon);
+    ctx.closePath();
+    ctx.fill();
+
+    // Grid lines
+    ctx.strokeStyle = `hsla(${pal.hue}, 80%, 50%, 0.25)`;
     ctx.lineWidth = 1;
-    
-    // Horizontal perspective lines
-    const horizon = H * 0.4;
-    for (let i = 0; i < 20; i++) {
-      const y = horizon + Math.pow(i / 20, 2) * (H - horizon);
-      const moveY = (y + time * 50 * speed) % (H - horizon);
+
+    // Horizontal
+    for (let i = 0; i < 25; i++) {
+      const rawY = Math.pow(i / 25, 2) * (H - horizon);
+      const moveY = (rawY + t * 50 * speed) % (H - horizon);
       const finalY = horizon + moveY;
+      const proximity = 1 - moveY / (H - horizon);
+      ctx.strokeStyle = `hsla(${pal.hue}, 80%, 50%, ${0.1 + proximity * 0.3})`;
       ctx.beginPath(); ctx.moveTo(0, finalY); ctx.lineTo(W, finalY); ctx.stroke();
     }
-    // Vertical perspective lines
-    for (let i = -10; i <= 10; i++) {
-      const xTop = W/2 + i * 50;
-      const xBot = W/2 + i * 500;
+
+    // Vertical (perspective)
+    ctx.strokeStyle = `hsla(${pal.hue}, 80%, 50%, 0.2)`;
+    for (let i = -15; i <= 15; i++) {
+      const xTop = W/2 + i * 40;
+      const xBot = W/2 + i * 600;
       ctx.beginPath(); ctx.moveTo(xTop, horizon); ctx.lineTo(xBot, H); ctx.stroke();
     }
-    // Pulsing Sun
-    const sunGrad = ctx.createRadialGradient(W/2, horizon - 50, 0, W/2, horizon - 50, 150);
-    sunGrad.addColorStop(0, `hsla(${pal.hue - 20}, 100%, 60%, 0.8)`);
-    sunGrad.addColorStop(1, 'transparent');
-    ctx.fillStyle = sunGrad;
-    ctx.beginPath(); ctx.arc(W/2, horizon - 50, 150 + bio.beatPhase*20, 0, Math.PI*2); ctx.fill();
+
+    // Scan lines overlay
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+    for (let y = 0; y < H; y += 3) {
+      ctx.fillRect(0, y, W, 1);
+    }
+
+    // Side glow bars
+    const barGlow = ctx.createLinearGradient(0, 0, 40, 0);
+    barGlow.addColorStop(0, `hsla(${pal.hue}, 100%, 60%, ${0.05 + bio.beatPhase * 0.1})`);
+    barGlow.addColorStop(1, 'transparent');
+    ctx.fillStyle = barGlow;
+    ctx.fillRect(0, 0, 40, H);
+    const barGlow2 = ctx.createLinearGradient(W, 0, W - 40, 0);
+    barGlow2.addColorStop(0, `hsla(${pal.hue}, 100%, 60%, ${0.05 + bio.beatPhase * 0.1})`);
+    barGlow2.addColorStop(1, 'transparent');
+    ctx.fillStyle = barGlow2;
+    ctx.fillRect(W - 40, 0, 40, H);
   }
 
-  // MODE 5: ZEN (Minimal Typo)
+  // MODE 5: RELAXED / AURORA — Northern lights with stars & breathing orbs
+  const auroraStars = Array.from({length: 150}, () => ({
+    x: Math.random(), y: Math.random() * 0.55,
+    r: Math.random() * 1.8 + 0.2,
+    twinkle: Math.random() * Math.PI * 2
+  }));
+
+  const auroraOrbs = Array.from({length: 10}, (_, i) => ({
+    x: Math.random(), y: 0.25 + Math.random() * 0.5,
+    r: 25 + Math.random() * 70,
+    phase: i * 0.7, speed: 0.08 + Math.random() * 0.12
+  }));
+
   function renderZen(ctx, dt, pal) {
-    const i = bio.intensity;
-    const grad = ctx.createLinearGradient(0, 0, W, H);
-    grad.addColorStop(0, `hsla(${pal.hue}, 50%, 10%, 1)`);
-    grad.addColorStop(1, `hsla(${pal.hue + 40}, 50%, 5%, 1)`);
-    ctx.fillStyle = grad;
+    const t = performance.now() * 0.001;
+    const breathe = Math.sin(t * 0.3) * 0.5 + 0.5;
+
+    // Deep night sky
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+    skyGrad.addColorStop(0, '#010008');
+    skyGrad.addColorStop(0.3, '#030018');
+    skyGrad.addColorStop(0.7, '#060028');
+    skyGrad.addColorStop(1, '#0a0a30');
+    ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, W, H);
 
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    
-    // HR Display
-    ctx.font = `200 ${120 + bio.beatPhase * 40}px Outfit`;
-    ctx.fillStyle = '#fff';
-    ctx.fillText(Math.round(bio.hr), W/2, H/2 - 40);
-    ctx.font = '500 20px Outfit';
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText('HEART RATE / BPM', W/2, H/2 + 40);
+    // Stars with twinkle
+    auroraStars.forEach(s => {
+      const alpha = 0.2 + Math.sin(t * 0.8 + s.twinkle) * 0.4;
+      ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0, alpha)})`;
+      ctx.beginPath();
+      ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
 
-    // Stress Bar
-    const barW = 300;
-    ctx.fillStyle = 'rgba(255,255,255,0.1)';
-    ctx.roundRect(W/2 - barW/2, H/2 + 100, barW, 4, 2); ctx.fill();
-    ctx.fillStyle = pal.main;
-    ctx.shadowBlur = 15; ctx.shadowColor = pal.main;
-    ctx.roundRect(W/2 - barW/2, H/2 + 100, barW * bio.strNorm, 4, 2); ctx.fill();
-    ctx.shadowBlur = 0;
+    // Aurora curtains — 5 layers
+    const auroraColors = [
+      { h: 120, s: 85, l: 50 },
+      { h: 150, s: 75, l: 48 },
+      { h: 180, s: 70, l: 45 },
+      { h: 260, s: 65, l: 55 },
+      { h: 310, s: 55, l: 50 },
+    ];
+
+    for (let layer = 0; layer < 5; layer++) {
+      const c = auroraColors[layer];
+      const yBase = H * (0.12 + layer * 0.07);
+      const amplitude = 50 + breathe * 35 + bio.hrNorm * 25;
+      const waveSpeed = 0.12 + layer * 0.04;
+
+      ctx.beginPath();
+      ctx.moveTo(0, H);
+
+      for (let x = 0; x <= W; x += 3) {
+        const nx = x / W;
+        const wave1 = Math.sin(nx * 3.5 + t * waveSpeed + layer * 1.2) * amplitude;
+        const wave2 = Math.sin(nx * 6 - t * waveSpeed * 0.6 + layer * 2.5) * amplitude * 0.4;
+        const wave3 = noise2D(nx * 2.5, t * 0.08 + layer * 0.5) * amplitude * 0.7;
+        ctx.lineTo(x, yBase + wave1 + wave2 + wave3);
+      }
+
+      ctx.lineTo(W, H);
+      ctx.closePath();
+
+      const curtainGrad = ctx.createLinearGradient(0, yBase - amplitude * 1.5, 0, yBase + H * 0.35);
+      const alpha = 0.07 + breathe * 0.05 - layer * 0.01;
+      curtainGrad.addColorStop(0, `hsla(${c.h}, ${c.s}%, ${c.l}%, ${alpha})`);
+      curtainGrad.addColorStop(0.25, `hsla(${c.h}, ${c.s}%, ${c.l}%, ${alpha * 0.5})`);
+      curtainGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = curtainGrad;
+      ctx.fill();
+    }
+
+    // Floating orbs
+    auroraOrbs.forEach(o => {
+      const ox = (o.x + Math.sin(t * o.speed + o.phase) * 0.18) * W;
+      const oy = (o.y + Math.cos(t * o.speed * 0.6 + o.phase) * 0.1) * H;
+      const radius = o.r * (0.7 + breathe * 0.5);
+
+      const orbGrad = ctx.createRadialGradient(ox, oy, 0, ox, oy, radius);
+      orbGrad.addColorStop(0, `hsla(${130 + o.phase * 25}, 75%, 65%, ${0.12 + breathe * 0.08})`);
+      orbGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = orbGrad;
+      ctx.beginPath(); ctx.arc(ox, oy, radius, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // Horizon glow
+    const horizonGrad = ctx.createRadialGradient(W/2, H * 1.1, 0, W/2, H * 1.1, H * 0.7);
+    horizonGrad.addColorStop(0, `hsla(180, 50%, 25%, ${0.08 + breathe * 0.04})`);
+    horizonGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = horizonGrad;
+    ctx.fillRect(0, 0, W, H);
   }
 
   // ── Main Loop ─────────────────────────────────
