@@ -105,21 +105,23 @@ export function MoodVisualDisplay({ mood, isActive }: MoodVisualDisplayProps) {
       ))}
 
       {/* Mood label */}
-      <div className="absolute bottom-8 left-0 right-0 text-center">
-        <motion.div
-          className="inline-block px-6 py-3 rounded-full bg-black/40 backdrop-blur-sm"
-          animate={{
-            scale: isActive ? [1, 1.05, 1] : 1,
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        >
-          <p className="text-white text-2xl font-semibold">{config.name}</p>
-        </motion.div>
-      </div>
+      {isActive && (
+        <div className="absolute bottom-8 left-0 right-0 text-center">
+          <motion.div
+            className="inline-block px-6 py-3 rounded-full bg-black/40 backdrop-blur-sm"
+            animate={{
+              scale: [1, 1.05, 1],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          >
+            <p className="text-white text-2xl font-semibold">{config.name}</p>
+          </motion.div>
+        </div>
+      )}
 
       {/* Status indicator */}
       {!isActive && (

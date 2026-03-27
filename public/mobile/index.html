@@ -1,120 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>BodyCanvas Control</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <!-- Ambient Background Orbs -->
-  <div class="ambient-orb orb-1"></div>
-  <div class="ambient-orb orb-2"></div>
+
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Mood-based Visual Control App</title>
+      <script type="module" crossorigin src="/mobile/assets/index-CQmYD-26.js"></script>
+      <link rel="stylesheet" crossorigin href="/mobile/assets/index-MSWf9OmP.css">
+    </head>
+
+    <body>
+      <div id="root"></div>
+    </body>
+  </html>
   
-  <div class="app-container">
-    <header>
-      <div class="header-left">
-        <div class="brand-ring">
-          <div class="brand-core"></div>
-        </div>
-        <h1>BodyCanvas</h1>
-      </div>
-      <div class="status-pill" id="statusPill">
-        <span class="status-dot"></span>
-        <span class="status-text" id="statusText">Standby</span>
-      </div>
-    </header>
-
-    <main>
-      <div class="metrics-container">
-        <!-- HR Card -->
-        <div class="glass-card metric-card hr-card">
-          <div class="card-header">
-            <span class="card-title">Heart Rate</span>
-            <svg class="icon icon-hr" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
-          </div>
-          <div class="metric-body">
-            <span class="value" id="hrValue">--</span>
-            <span class="unit">BPM</span>
-          </div>
-          <div class="pulse-graph" id="pulseGraph"></div>
-        </div>
-
-        <!-- Stress Card -->
-        <div class="glass-card metric-card stress-card">
-          <div class="card-header">
-            <span class="card-title">Stress Level</span>
-            <svg class="icon icon-stress" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-            </svg>
-          </div>
-          <div class="metric-body">
-            <span class="value" id="stressValue">--</span>
-            <span class="unit">%</span>
-          </div>
-          <div class="stress-bar-container">
-            <div class="stress-bar-fill" id="stressBarFill"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Mode Selector -->
-      <div class="glass-card mode-container">
-        <div class="card-header">
-          <span class="card-title">Visualizer Mode</span>
-        </div>
-        <div class="mode-scroller" id="modeScroller">
-          <button class="mode-btn active" data-mode="1">1. FLOW</button>
-          <button class="mode-btn" data-mode="2">2. PULSE</button>
-          <button class="mode-btn" data-mode="3">3. FLUID</button>
-          <button class="mode-btn" data-mode="4">4. NEON GRID</button>
-          <button class="mode-btn" data-mode="5">5. ZEN TYPE</button>
-        </div>
-      </div>
-
-      <div class="action-container">
-        <button id="btnConnect" class="btn-primary glass-action">
-          <span class="btn-text">Connect Device</span>
-          <div class="btn-glow"></div>
-        </button>
-      </div>
-
-      <!-- Sleek Debug Controls -->
-      <div class="glass-card debug-card">
-        <div class="debug-header">
-          <span>Manual Injection Override</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="debugToggle">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="debug-body" id="debugBody">
-          <div class="slider-group">
-            <label>Heart Rate</label>
-            <input type="range" id="hrRange" min="50" max="180" value="72" class="premium-slider">
-          </div>
-          <div class="slider-group">
-            <label>Stress</label>
-            <input type="range" id="stressRange" min="0" max="100" value="20" class="premium-slider">
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <footer>
-      <div class="connection-status">
-        <span class="server-dot inactive" id="serverDot"></span>
-        <span id="serverStatusText">Visualizer Link: Offline</span>
-      </div>
-    </footer>
-  </div>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="controller.js"></script>
-</body>
-</html>

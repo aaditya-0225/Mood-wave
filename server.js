@@ -29,7 +29,7 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
-  console.log(`BodyCanvas Server running on http://localhost:${PORT}`);
+  console.log(`Mood Wave Server running on http://localhost:${PORT}`);
   console.log(`- Visualizer: http://localhost:${PORT}/`);
   console.log(`- Mobile Controller: http://localhost:${PORT}/mobile/`);
 });

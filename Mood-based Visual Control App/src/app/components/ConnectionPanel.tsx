@@ -34,7 +34,7 @@ export function ConnectionPanel({ activeMode, onModeChange }: ConnectionPanelPro
   return (
     <Card className="p-4">
       <h3 className="text-sm font-medium mb-3 text-gray-700">Connection Mode</h3>
-      <div className="space-y-2">
+      <div className="space-y-4">
         {modes.map((mode) => {
           const Icon = mode.icon;
           const isActive = activeMode === mode.id;

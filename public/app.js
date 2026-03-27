@@ -1,6 +1,4 @@
-// =============================================
-//  BodyCanvas — Multi-Mode Biometric Visualizer
-// =============================================
+//  Mood Wave — Multi-Mode Biometric Visualizer
 
 (() => {
   'use strict';

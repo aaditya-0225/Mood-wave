@@ -59,14 +59,14 @@ export default function App() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
         <div className="max-w-md mx-auto">
-          <h1 className="text-xl font-bold text-gray-900">MoodLight</h1>
+          <h1 className="text-xl font-bold text-gray-900">Mood Wave</h1>
           <p className="text-sm text-gray-500">Ambient Visual Controller</p>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        <div className="max-w-md mx-auto p-4 space-y-4">
+        <div className="max-w-md mx-auto p-4 space-y-8">
           {/* Visual Preview */}
           <Card className="overflow-hidden">
             <div className="aspect-video">
